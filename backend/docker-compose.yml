@@ -1,0 +1,38 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: aurganize-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: aurganize
+      POSTGRES_PASSWORD: aurganize
+      POSTGRES_DB: aurganize
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./.postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aurganize -d aurganize"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # A second Postgres for integration tests (so tests can be destructive)
+  postgres-test:
+    image: postgres:16-alpine
+    container_name: aurganize-postgres-test
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: aurganize
+      POSTGRES_PASSWORD: aurganize
+      POSTGRES_DB: aurganize_test
+    ports:
+      - "5433:5432"
+    tmpfs:
+      - /var/lib/postgresql/data   # in-memory: fast and ephemeral
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aurganize -d aurganize_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
