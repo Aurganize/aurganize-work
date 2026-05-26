@@ -38,9 +38,9 @@ nuke: ## Stop Postgres and DESTROY all local data (dev DB only; test DB is alrea
 # === Tooling ===
 .PHONY: tools
 tools: ## Install Go-based CLI tools (sqlc, goose, golangci-lint, govulncheck)
-	go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.27.0
-	go install github.com/pressly/goose/v3/cmd/goose@v3.22.1
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.8
+	go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+	go install github.com/pressly/goose/v3/cmd/goose@latest
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 	go install golang.org/x/vuln/cmd/govulncheck@latest
 
 # === Database ===

@@ -1,17 +1,16 @@
 -- name: CreateSession :one
-INSERT INTO sessions (
-    tenant_id, user_id, refresh_token_hash, client_type,
-    user_agent, ip_address, expires_at
-)
+INSERT INTO sessions(
+	tenant_id, user_id, refresh_token_hash, 
+	client_type,  user_agent, ip_address, expires_at)
 VALUES ($1, $2, $3, $4, $5, $6, $7)
 RETURNING *;
 
 -- name: GetSessionByTokenHash :one
-SELECT *
+SELECT * 
 FROM sessions
 WHERE refresh_token_hash = $1
-  AND revoked_at IS NULL
-  AND expires_at > now();
+	AND revoked_at IS NULL
+	AND expires_at > now();
 
 -- name: TouchSession :exec
 UPDATE sessions
@@ -21,8 +20,8 @@ WHERE id = $1;
 -- name: RotateSessionToken :exec
 UPDATE sessions
 SET refresh_token_hash = $1,
-    last_used_at = now(),
-    expires_at = $2
+	last_used_at = now(),
+	expires_at = $2
 WHERE id = $3;
 
 -- name: RevokeSession :exec
