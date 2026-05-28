@@ -1,0 +1,59 @@
+{
+  "info": {
+    "_postman_id": "484011f5-adbc-4126-a817-d50948cd9de5",
+    "name": "Aurganize Work API",
+    "description": "Local API for the Aurganize Work backend. See backend/docs/06_auth_endpoints.md for test guidance.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "49378901",
+    "_collection_link": "https://go.postman.co/collection/49378901-484011f5-adbc-4126-a817-d50948cd9de5?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "00 - Health",
+      "item": [
+        {
+          "name": "heathcheck",
+          "request": {
+            "method": "GET",
+            "header": []
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ]
+}

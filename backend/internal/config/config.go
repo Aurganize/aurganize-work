@@ -71,7 +71,7 @@ func (c *Config) IsDevelopment() bool {
 // Load reads configuration from environment variables, validates it,
 // and returns either a populated Config or an error explaining what's missing
 // Call this once in main(); never read env vars directly elsewhere
-func load() (*Config, error) {
+func Load() (*Config, error) {
 	var cfg Config
 	if err := envconfig.Process("", &cfg); err != nil {
 		return nil, fmt.Errorf("loading config: %w", err)
@@ -99,7 +99,7 @@ func (c *Config) Validate() error {
 	}
 
 	switch strings.ToLower(c.LogFormat) {
-	case "josn", "text":
+	case "json", "text":
 	default:
 		return fmt.Errorf("invalid LOG_FORMAT %q (must be json or text)", c.LogFormat)
 	}

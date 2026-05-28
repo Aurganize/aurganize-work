@@ -17,13 +17,13 @@ type AppError interface {
 
 // baseError is the concrete implementation. All factory functions below
 // return *baseError under the AppError interface.
-type domainError struct {
+type baseError struct {
 	code    string
 	message string
 	cause   error
 }
 
-func (e *domainError) Error() string {
+func (e *baseError) Error() string {
 	if e.cause != nil {
 		return fmt.Sprintf("%s: %s; %v", e.code, e.message, e.cause)
 	}
@@ -31,10 +31,10 @@ func (e *domainError) Error() string {
 	return fmt.Sprintf("%s: %s", e.code, e.message)
 }
 
-func (e *domainError) Code() string    { return e.code }
-func (e *domainError) Message() string { return e.message }
-func (e *domainError) Cause() error    { return e.cause }
-func (e *domainError) Unwrap() error   { return e.cause }
+func (e *baseError) Code() string    { return e.code }
+func (e *baseError) Message() string { return e.message }
+func (e *baseError) Cause() error    { return e.cause }
+func (e *baseError) Unwrap() error   { return e.cause }
 
 // === Factory functions ===
 //
@@ -44,7 +44,7 @@ func (e *domainError) Unwrap() error   { return e.cause }
 // ErrNotFound — HTTP 404. The requested resource does not exist (or RLS
 // hides it, which is indistinguishable to the caller — intentional).
 func ErrNotFound(resource string, cause error) AppError {
-	return &domainError{
+	return &baseError{
 		code:    "NOT_FOUND",
 		message: fmt.Sprintf("%s not found", resource),
 		cause:   cause,
@@ -54,7 +54,7 @@ func ErrNotFound(resource string, cause error) AppError {
 // ErrInvalidInput — HTTP 400. Input failed validation (shape, type, range).
 // Used for things validator can't express in struct tags.
 func ErrInvalidInput(reason string, cause error) AppError {
-	return &domainError{
+	return &baseError{
 		code:    "INVALID_INPUT",
 		message: reason,
 		cause:   cause,
@@ -63,7 +63,7 @@ func ErrInvalidInput(reason string, cause error) AppError {
 
 // ErrUnauthenticated — HTTP 401. The request has no credentials or invalid ones.
 func ErrUnauthenticated(reason string, cause error) AppError {
-	return &domainError{
+	return &baseError{
 		code:    "UNAUTHENTICATED",
 		message: reason,
 		cause:   cause,
@@ -72,7 +72,7 @@ func ErrUnauthenticated(reason string, cause error) AppError {
 
 // ErrForbidden — HTTP 403. The caller is authenticated but lacks permission.
 func ErrForbidden(reason string, cause error) AppError {
-	return &domainError{
+	return &baseError{
 		code:    "FORBIDDEN",
 		message: reason,
 		cause:   cause,
@@ -82,7 +82,7 @@ func ErrForbidden(reason string, cause error) AppError {
 // ErrConflict — HTTP 409. A unique constraint, optimistic-lock, or business
 // rule precludes the operation. E.g., email already in use.
 func ErrConflict(reason string, cause error) AppError {
-	return &domainError{
+	return &baseError{
 		code:    "CONFLICT",
 		message: reason,
 		cause:   cause,
@@ -92,7 +92,7 @@ func ErrConflict(reason string, cause error) AppError {
 // ErrBusinessRule — HTTP 422. A semantically valid request that violates
 // a business rule (e.g., can't advance a project past its current stage).
 func ErrBusinessRuleViolation(reason string, cause error) AppError {
-	return &domainError{
+	return &baseError{
 		code:    "BUSINESS_RULE_VIOLATION",
 		message: reason,
 		cause:   cause,
@@ -102,7 +102,7 @@ func ErrBusinessRuleViolation(reason string, cause error) AppError {
 // ErrInternal — HTTP 500. Something unexpected. Message is opaque; cause
 // is logged. Use this when you don't have a more specific error.
 func ErrInternal(cause error) AppError {
-	return &domainError{
+	return &baseError{
 		code:    "INTERNAL",
 		message: "An internal error occured",
 		cause:   cause,
