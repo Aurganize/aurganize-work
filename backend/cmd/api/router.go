@@ -19,7 +19,7 @@ func buildRouter(cfg *config.Config, logger *slog.Logger, pool *pgxpool.Pool) ht
 	// gin.New() instead of gin.Default() — Default() adds gin's stdout
 	// logger and recovery middleware in a format that doesn't match slog.
 	// We add our own (file 05).
-	r := gin.New()
+	r := gin.Default()
 
 	// Built-in panic recovery so a handler bug doesn't crash the server.
 	// Replaced with a custom slog-integrated version in file 05.

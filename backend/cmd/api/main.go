@@ -75,7 +75,7 @@ func run() int {
 
 	// === Wait for shutdown signal or server error ===
 	shutdown := make(chan os.Signal, 1) // shutdown signal channel
-	// we register to get system terminal signal to be send to shutdown signal
+	// We register to get - system terminate signal to be send to shutdown signal
 	signal.Notify(shutdown, os.Interrupt, syscall.SIGTERM)
 
 	select {
@@ -88,7 +88,7 @@ func run() int {
 	// === Graceful Shutdown ===
 	// Give in-flight requests up to 30s to finish before forcing the
 	// server to close.
-	ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
 		logger.Error("forced shutdown", slog.Any("err", err))
