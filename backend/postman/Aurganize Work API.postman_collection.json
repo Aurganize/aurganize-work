@@ -14,8 +14,777 @@
         {
           "name": "heathcheck",
           "request": {
+            "auth": {
+              "type": "noauth"
+            },
             "method": "GET",
-            "header": []
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tenant_b_access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{api_v1}}/health",
+              "host": [
+                "{{api_v1}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "01 - Middleware Probes",
+      "item": [
+        {
+          "name": "/me without token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401\", () => pm.response.to.have.status(401))",
+                  "pm.test(\"error body has code\", () => {",
+                  "    pm.expect(pm.response.json().code).to.eql(\"UNAUTHENTICATED\")",
+                  "})"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_v1}}/me",
+              "host": [
+                "{{api_v1}}"
+              ],
+              "path": [
+                "me"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "/me with garbage token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"401 with bad token\", () => pm.response.to.have.status(401))"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer this-is-not-a-jwt",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{api_v1}}/me",
+              "host": [
+                "{{api_v1}}"
+              ],
+              "path": [
+                "me"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "02 - Signup",
+      "item": [
+        {
+          "name": "02 — Signup — tenant A (web)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Created 201\", ()=> pm.response.to.have.status(201))",
+                  "",
+                  "const data = pm.response.json()",
+                  "",
+                  "pm.test(\"has access_token\", ()=> pm.expect(data.access_token).to.be.a(\"string\"))",
+                  "pm.test(\"hash refresh_token\", () => pm.expect(data.refresh_token).to.be.a(\"string\"))",
+                  "",
+                  "// Save for use in other requests",
+                  "pm.environment.set(\"tenant_a_access_token\", data.access_token);",
+                  "pm.environment.set(\"tenant_a_refresh_token\", data.refresh_token);",
+                  "// Default access_token used by the collection-level bearer config",
+                  "pm.environment.set(\"access_token\", data.access_token);",
+                  "pm.environment.set(\"refresh_token\", data.refresh_token);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer this-is-not-a-jwt",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tenant_name\": \"Aurganize Pilot Co\",\n  \"tenant_slug\": \"aurganize-pilot\",\n  \"admin_name\": \"Ada Admin\",\n  \"email\": \"{{tenant_a_email}}\",\n  \"password\": \"{{tenant_a_password}}\",\n  \"client\": \"web\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{api_v1}}/auth/signup",
+              "host": [
+                "{{api_v1}}"
+              ],
+              "path": [
+                "auth",
+                "signup"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "02 — Signup — tenant B (web)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Created 201\", ()=> pm.response.to.have.status(201))",
+                  "",
+                  "const data = pm.response.json()",
+                  "",
+                  "pm.test(\"has access_token\", ()=> pm.expect(data.access_token).to.be.a(\"string\"))",
+                  "pm.test(\"hash refresh_token\", () => pm.expect(data.refresh_token).to.be.a(\"string\"))",
+                  "",
+                  "// Save for use in other requests",
+                  "pm.environment.set(\"tenant_b_access_token\", data.access_token);",
+                  "pm.environment.set(\"tenant_b_refresh_token\", data.refresh_token);",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer this-is-not-a-jwt",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tenant_name\": \"Acme Decor\",\n  \"tenant_slug\": \"acme-decor\",\n  \"admin_name\": \"Bea Admin\",\n  \"email\": \"{{tenant_b_email}}\",\n  \"password\": \"{{tenant_b_password}}\",\n  \"client\": \"web\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{api_v1}}/auth/signup",
+              "host": [
+                "{{api_v1}}"
+              ],
+              "path": [
+                "auth",
+                "signup"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "02 — Signup — duplicate slug",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"409 Conflict\", ()=> pm.response.to.have.status(409))",
+                  "pm.test(\"code is CONFLICT\", () => pm.expect(pm.response.json().code).to.eql(\"CONFLICT\"))",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer this-is-not-a-jwt",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tenant_name\": \"Aurganize Pilot Co\",\n  \"tenant_slug\": \"aurganize-pilot\",\n  \"admin_name\": \"Other\",\n  \"email\": \"other@aurganize.test\",\n  \"password\": \"Password123!\",\n  \"client\": \"web\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{api_v1}}/auth/signup",
+              "host": [
+                "{{api_v1}}"
+              ],
+              "path": [
+                "auth",
+                "signup"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "02 — Signup — short password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"400 Bad request\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"fields has password error\", () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.fields).to.have.property(\"password\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer this-is-not-a-jwt",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tenant_name\": \"Short Pw Co\",\n  \"tenant_slug\": \"short-pw-co\",\n  \"admin_name\": \"X\",\n  \"email\": \"x@example.test\",\n  \"password\": \"short\",\n  \"client\": \"web\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{api_v1}}/auth/signup",
+              "host": [
+                "{{api_v1}}"
+              ],
+              "path": [
+                "auth",
+                "signup"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "02 — Signup — invalid email",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"400 Bad request\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"fields has email error\", () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.fields).to.have.property(\"email\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer this-is-not-a-jwt",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tenant_name\": \"Short Pw Co\",\n  \"tenant_slug\": \"short-pw-co\",\n  \"admin_name\": \"X\",\n  \"email\": \"not an email\",\n  \"password\": \"short\",\n  \"client\": \"web\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{api_v1}}/auth/signup",
+              "host": [
+                "{{api_v1}}"
+              ],
+              "path": [
+                "auth",
+                "signup"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "02 — Signup — missing field",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"400 Bad request\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"fields has email error\", () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.fields).to.have.property(\"email\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer this-is-not-a-jwt",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tenant_name\": \"Short Pw Co\",\n  \"tenant_slug\": \"short-pw-co\",\n  \"admin_name\": \"X\",\n  \"password\": \"short\",\n  \"client\": \"web\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{api_v1}}/auth/signup",
+              "host": [
+                "{{api_v1}}"
+              ],
+              "path": [
+                "auth",
+                "signup"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "03 - Login",
+      "item": [
+        {
+          "name": "03— Login — tenant A admin (web)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"200 Ok\", () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json();",
+                  "",
+                  "pm.environment.set(\"tenant_a_access_token\", data.access_token);",
+                  "pm.environment.set(\"tenant_a_refresh_token\", data.refresh_token);",
+                  "pm.environment.set(\"access_token\", data.access_token);",
+                  "pm.environment.set(\"refresh_token\", data.refresh_token);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disabledSystemHeaders": {}
+          },
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer this-is-not-a-jwt",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{tenant_a_email}}\",\n  \"password\": \"{{tenant_a_password}}\",\n  \"client\": \"web\"\n}"
+            },
+            "url": {
+              "raw": "{{api_v1}}/auth/login",
+              "host": [
+                "{{api_v1}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "03 — Login — wrong password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"401 UNAUTHENTICATED\", () => pm.response.to.have.status(401));",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disabledSystemHeaders": {}
+          },
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer this-is-not-a-jwt",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{tenant_a_email}}\",\n  \"password\": \"wrongpass\",\n  \"client\": \"web\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{api_v1}}/auth/login",
+              "host": [
+                "{{api_v1}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "03— Login — unknown email",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"401 UNAUTHENTICATED\", () => pm.response.to.have.status(401));",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disabledSystemHeaders": {}
+          },
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer this-is-not-a-jwt",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"unknown@email.com\",\n  \"password\": \"{{tenant_a_password}}\",\n  \"client\": \"web\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{api_v1}}/auth/login",
+              "host": [
+                "{{api_v1}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "04 - Refresh",
+      "item": [
+        {
+          "name": "04 — Refresh — happy path",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json();",
+                  "pm.test(\"new access token\", () => pm.expect(data.access_token).to.be.a(\"string\"));",
+                  "pm.test(\"new refresh token (rotated)\", () => {",
+                  "  pm.expect(data.refresh_token).to.not.eql(pm.environment.get(\"refresh_token\"));",
+                  "});",
+                  "pm.environment.set(\"old_refresh_token\", pm.environment.get(\"refresh_token\"));",
+                  "pm.environment.set(\"access_token\", data.access_token);",
+                  "pm.environment.set(\"refresh_token\", data.refresh_token);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\",\n  \"client\": \"web\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{api_v1}}/auth/refresh",
+              "host": [
+                "{{api_v1}}"
+              ],
+              "path": [
+                "auth",
+                "refresh"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "04 — Refresh — replayed token (must fail)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"401 Unauthorized — replay rejected\", () => pm.response.to.have.status(401));"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{old_refresh_token}}\",\n  \"client\": \"web\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{api_v1}}/auth/refresh",
+              "host": [
+                "{{api_v1}}"
+              ],
+              "path": [
+                "auth",
+                "refresh"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "05 - Protected",
+      "item": [
+        {
+          "name": "05 — GET /me — tenant A",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json();",
+                  "pm.test(\"email matches tenant A\", () => pm.expect(data.email).to.eql(pm.environment.get(\"tenant_a_email\")));",
+                  "pm.test(\"role is admin\", () => pm.expect(data.role).to.eql(\"admin\"));",
+                  "pm.environment.set(\"tenant_a_user_id\", data.user_id);",
+                  "pm.environment.set(\"tenant_a_tenant_id\", data.tenant_id);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_v1}}/me",
+              "host": [
+                "{{api_v1}}"
+              ],
+              "path": [
+                "me"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "05 — GET /me — tenant B",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"401 Unauthorized — replay rejected\", () => pm.response.to.have.status(401));"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tenant_b_access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{api_v1}}/me",
+              "host": [
+                "{{api_v1}}"
+              ],
+              "path": [
+                "me"
+              ]
+            }
           },
           "response": []
         }

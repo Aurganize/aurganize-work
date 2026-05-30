@@ -61,6 +61,19 @@ migrate-create: ## Create a new migration. Usage: make migrate-create name=add_c
 	@if [ -z "$(name)" ]; then echo "Usage: make migrate-create name=<snake_case_name>"; exit 1; fi
 	goose -dir migrations -s create $(name) sql
 
+# === Test Database ===
+.PHONY: test-migrate-up
+test-migrate-up: ## Apply all pending migrations to dev DB
+	goose -dir migrations postgres "$(DATABASE_URL_TEST)" up
+
+.PHONY: test-migrate-down
+test-migrate-down: ## Roll back the last migration on dev DB
+	goose -dir migrations postgres "$(DATABASE_URL_TEST)" down
+
+.PHONY: test-migrate-status
+test-migrate-status: ## Show migration status on dev DB
+	goose -dir migrations postgres "$(DATABASE_URL_TEST)" status
+
 # === Codegen ===
 .PHONY: sqlc
 sqlc: ## Regenerate sqlc Go code from SQL queries

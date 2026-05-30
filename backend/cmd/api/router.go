@@ -4,9 +4,12 @@ import (
 	"log/slog"
 	"net/http"
 
+	"git.aurganize.com/Aurganize/aurganize-work-backend/internal/api/handlers"
 	"git.aurganize.com/Aurganize/aurganize-work-backend/internal/api/middleware"
 	"git.aurganize.com/Aurganize/aurganize-work-backend/internal/auth"
 	"git.aurganize.com/Aurganize/aurganize-work-backend/internal/config"
+	"git.aurganize.com/Aurganize/aurganize-work-backend/internal/services"
+	"git.aurganize.com/Aurganize/aurganize-work-backend/internal/storage"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -18,7 +21,11 @@ func buildRouter(cfg *config.Config, logger *slog.Logger, pool *pgxpool.Pool) ht
 		gin.SetMode(gin.ReleaseMode)
 	}
 
+	// === Construct services and handlers ===
 	jwtSvc := auth.NewJWTservice(cfg.JWTSecret, cfg.JWTAccessTokenTTLWeb, cfg.JWTAccessTokneTTLMobile)
+	poolAdapter := storage.PoolAdapter{Pool: pool}
+	authSvc := services.NewAuthService(jwtSvc, &poolAdapter, cfg.JWTAccessTokenTTLWeb, cfg.JWTAccessTokneTTLMobile)
+	authHandler := handlers.NewAuthHandler(authSvc)
 
 	// gin.New() instead of gin.Default() — Default() adds gin's stdout
 	// logger and recovery middleware in a format that doesn't match slog.
@@ -56,29 +63,23 @@ func buildRouter(cfg *config.Config, logger *slog.Logger, pool *pgxpool.Pool) ht
 	})
 
 	// === Public auth endpoints (will be filled in 06_auth_endpoints.md) ===
-	// public := r.Group("/api/v1/auth")
-	// {
-	//     public.POST("/signup", ...)
-	//     public.POST("/login", ...)
-	//     public.POST("/refresh", ...)
-	// }
+	public := r.Group("/api/v1/auth")
+	{
+		public.POST("/signup", authHandler.Signup)
+		public.POST("/login", authHandler.Login)
+		public.POST("/refresh", authHandler.Refresh)
+		public.POST("/logout", authHandler.Logout)
+	}
 
 	// === Protected endpoints ===
 	protected := r.Group("/api/v1")
 	protected.Use(middleware.Auth(jwtSvc))
 	protected.Use(middleware.Tenancy(pool))
-
-	// A minimal "who am I?" endpoint to verify the middleware chain works.
-	// Replaced/extended in 06.
-	protected.GET("/me", func(ctx *gin.Context) {
-		a := middleware.MustAuth(ctx)
-		ctx.JSON(http.StatusOK, gin.H{
-			"user_id":   a.UserId,
-			"tenant_id": a.TenantId,
-			"role":      a.Role,
-			"client":    a.Client,
-		})
-	})
+	{
+		// A minimal "who am I?" endpoint to verify the middleware chain works.
+		// Replaced/extended in 06.
+		protected.GET("/me", authHandler.Me)
+	}
 
 	return r
 }

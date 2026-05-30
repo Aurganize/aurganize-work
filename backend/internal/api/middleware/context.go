@@ -124,7 +124,7 @@ func SetDBtx(c *gin.Context, tx pgx.Tx) {
 // GetDBtx retrieves the request's tenant-scoped DB transaction within the connection.
 // Returns nil if the request isn't behind the Tenancy middleware.
 func GetDBtx(c context.Context) pgx.Tx {
-	if v, ok := c.Value(keyDBConn).(pgx.Tx); ok {
+	if v, ok := c.Value(keyDBtx).(pgx.Tx); ok {
 		return v
 	}
 	return nil

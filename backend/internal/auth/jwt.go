@@ -142,3 +142,12 @@ func (s *JWTService) ParseAccessToken(tokenString string) (*AccessClaims, error)
 
 	return claims, nil
 }
+
+// AccessTTL returns the access-token lifetime for the given client type.
+// Exposed for callers that need to communicate the expiry to clients.
+func (s *JWTService) GetAccessTTL(c ClientType) time.Duration {
+	if c == ClientMobile {
+		return s.ttlMobile
+	}
+	return s.ttlWeb
+}

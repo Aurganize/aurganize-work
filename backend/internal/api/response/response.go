@@ -60,7 +60,7 @@ func RenderError(c *gin.Context, err error) {
 // RenderValidationError is a specialised variant that includes per-field
 // errors in the response. Handlers call this when ShouldBindJSON or
 // validator returns a structured error.
-func RenderValidationErrors(c *gin.Context, fields map[string]any) {
+func RenderValidationErrors(c *gin.Context, fields map[string]string) {
 	body := ErrorBody{
 		Code:    "INVALID_INPUT",
 		Message: "Request validation failed",
