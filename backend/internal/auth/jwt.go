@@ -23,6 +23,18 @@ const (
 	ClientMobile ClientType = "mobile"
 )
 
+// ToString(), stringify the client type
+func (c ClientType) ToString() string {
+	switch c {
+	case ClientWeb:
+		return "web"
+	case ClientMobile:
+		return "mobile"
+	default:
+		return "unknown platform"
+	}
+}
+
 // IsValid reports whether the value is one of the known client types.
 func (c ClientType) IsValid() bool {
 	return (c == "web" || c == "mobile")

@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -82,8 +83,8 @@ func MustAuth(c context.Context) *AuthContext {
 
 // SetDBConn stores the tenant-scoped database connection (already inside a
 // transaction with SET LOCAL app.tenant_id applied) on the request context.
-// Handlers retrieve it via DBConn(ctx) and pass to sqlc queries.
-func SetDBConn(c *gin.Context, conn *pgxpool.Pool) {
+// Handlers retrieve it via GetDBConn(ctx) and pass to sqlc queries.
+func SetDBConn(c *gin.Context, conn *pgxpool.Conn) {
 	c.Set(keyDBConn.String(), conn)
 	c.Request = c.Request.WithContext(
 		context.WithValue(c.Request.Context(), keyDBConn, conn),
@@ -99,6 +100,31 @@ func SetDBConn(c *gin.Context, conn *pgxpool.Pool) {
 // Returns nil if the request isn't behind the Tenancy middleware.
 func GetDBConn(c context.Context) *pgxpool.Conn {
 	if v, ok := c.Value(keyDBConn).(*pgxpool.Conn); ok {
+		return v
+	}
+	return nil
+}
+
+// === DB transaction ===
+
+// SetDBtx stores the tenant-scoped database transaction on the request context.
+// Handlers retrieve it via GetDBtx(ctx) and pass to sqlc queries.
+func SetDBtx(c *gin.Context, tx pgx.Tx) {
+	c.Set(keyDBtx.String(), tx)
+	c.Request = c.Request.WithContext(
+		context.WithValue(c.Request.Context(), keyDBtx, tx),
+	)
+}
+
+// GetDBtx reads the pgx.Tx using gin.Context.Value().
+// Value() checks gin storage then request context; since we lookup
+// with the typed key, this resolves from c.Request.Context()
+// (context.WithValue), not gin's string-keyed c.Set()/c.Get().
+// retrieves the *pgxpool.Conn, or nil if missing.
+// GetDBtx retrieves the request's tenant-scoped DB transaction within the connection.
+// Returns nil if the request isn't behind the Tenancy middleware.
+func GetDBtx(c context.Context) pgx.Tx {
+	if v, ok := c.Value(keyDBConn).(pgx.Tx); ok {
 		return v
 	}
 	return nil
