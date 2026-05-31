@@ -23,7 +23,17 @@ func (s *AuthService) Logout(ctx context.Context, in LogoutInput) error {
 
 	hashedRefresh := auth.HashRefreshToken(in.RefreshToken)
 
-	conn, err := s.pool.Acquire(ctx)
+	// === Stage 1: find session on authPool ===
+	session, err := s.findSessionByHash(ctx, hashedRefresh)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil // already gone; success
+		}
+		return domain.ErrInternal(err)
+	}
+
+	// === Stage 2: revoke on appPool ===
+	conn, err := s.appPool.Acquire(ctx)
 	if err != nil {
 		return domain.ErrInternal(err)
 	}
@@ -37,19 +47,12 @@ func (s *AuthService) Logout(ctx context.Context, in LogoutInput) error {
 
 	defer tx.Rollback(ctx)
 
-	querier := gen.New(tx)
-	session, err := querier.GetSessionByTokenHash(ctx, hashedRefresh)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil // already gone; success
-		}
-		return domain.ErrInternal(err)
-	}
-
 	if _, err := tx.Exec(ctx,
 		"SELECT set_config('app.tenant_id', $1, true)", session.TenantID.String()); err != nil {
 		return domain.ErrInternal(err)
 	}
+
+	querier := gen.New(tx)
 
 	if err := querier.RevokeSession(ctx, session.ID); err != nil {
 		return domain.ErrInternal(err)

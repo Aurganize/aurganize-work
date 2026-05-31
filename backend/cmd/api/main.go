@@ -37,21 +37,34 @@ func run() int {
 		slog.String("env", cfg.AppEnv),
 		slog.String("port", cfg.AppPort))
 
-	// == Connect to the database ===
+	// === App pool (aurganize_app — RLS-respecting) ===
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	pool, err := storage.NewPool(ctx, cfg.DatabaseUrl)
+	appPool, err := storage.NewPool(ctx, cfg.DatabaseUrl)
 	cancel()
 	if err != nil {
-		logger.Error("failed to connect to database.",
+		logger.Error("failed to connect to app user database.",
 			slog.Any("err", err))
 		return 1
 	}
 
-	defer pool.Close()
-	logger.Info("database connected")
+	defer appPool.Close()
+	logger.Info("app database connected", slog.Int("max_conns", 25))
+
+	// === Auth pool (aurganize_auth — BYPASSRLS, read-only) ===
+	ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
+	authPool, err := storage.NewPool(ctx, cfg.DatabaseAuthUrl)
+	cancel()
+	if err != nil {
+		logger.Error("failed to connect to auth user database.",
+			slog.Any("err", err))
+		return 1
+	}
+
+	defer appPool.Close()
+	logger.Info("auth database connected", slog.Int("max_conns", 4))
 
 	// === Build the HTTP router (gin Router) ===
-	router := buildRouter(cfg, logger, pool)
+	router := buildRouter(cfg, logger, appPool, authPool)
 
 	// === Start the HTTP server ===
 	// We build the server configuration

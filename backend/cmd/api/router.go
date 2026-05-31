@@ -16,15 +16,16 @@ import (
 
 // buildRouter wires up all routes and middleware. We re-build this in
 // 05_middleware.md and 06_auth_endpoints.md as we add layers.
-func buildRouter(cfg *config.Config, logger *slog.Logger, pool *pgxpool.Pool) http.Handler {
+func buildRouter(cfg *config.Config, logger *slog.Logger, appPool *pgxpool.Pool, authPool *pgxpool.Pool) http.Handler {
 	if cfg.IsProduction() {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
 	// === Construct services and handlers ===
 	jwtSvc := auth.NewJWTservice(cfg.JWTSecret, cfg.JWTAccessTokenTTLWeb, cfg.JWTAccessTokneTTLMobile)
-	poolAdapter := storage.PoolAdapter{Pool: pool}
-	authSvc := services.NewAuthService(jwtSvc, &poolAdapter, cfg.JWTAccessTokenTTLWeb, cfg.JWTAccessTokneTTLMobile)
+	appPoolAdapter := storage.PoolAdapter{Pool: appPool}
+	authPoolAdapter := storage.PoolAdapter{Pool: authPool}
+	authSvc := services.NewAuthService(jwtSvc, &appPoolAdapter, &authPoolAdapter, cfg.JWTAccessTokenTTLWeb, cfg.JWTAccessTokneTTLMobile)
 	authHandler := handlers.NewAuthHandler(authSvc)
 
 	// gin.New() instead of gin.Default() — Default() adds gin's stdout
@@ -48,7 +49,7 @@ func buildRouter(cfg *config.Config, logger *slog.Logger, pool *pgxpool.Pool) ht
 	// load balancer. Returns 200 if the process is up and the DB is
 	// reachable; 503 otherwise.
 	r.GET("/api/v1/health", func(c *gin.Context) {
-		if err := pool.Ping(c.Request.Context()); err != nil {
+		if err := appPool.Ping(c.Request.Context()); err != nil {
 			c.JSON(http.StatusServiceUnavailable, gin.H{
 				"status": "unhealthy",
 				"db":     "unreachable",
@@ -74,7 +75,7 @@ func buildRouter(cfg *config.Config, logger *slog.Logger, pool *pgxpool.Pool) ht
 	// === Protected endpoints ===
 	protected := r.Group("/api/v1")
 	protected.Use(middleware.Auth(jwtSvc))
-	protected.Use(middleware.Tenancy(pool))
+	protected.Use(middleware.Tenancy(appPool))
 	{
 		// A minimal "who am I?" endpoint to verify the middleware chain works.
 		// Replaced/extended in 06.

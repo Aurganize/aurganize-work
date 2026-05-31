@@ -39,17 +39,24 @@ func setupTestRouter(t *testing.T) (http.Handler, *auth.JWTService) {
 		LogFormat:               "json",
 	}
 
-	pool, err := pgxpool.New(context.Background(), cfg.DatabaseUrl)
+	appPool, err := pgxpool.New(context.Background(), cfg.DatabaseUrl)
 	if err != nil {
 		t.Fatalf("failed to connect to test DB: %v", err)
 	}
 
-	t.Cleanup(pool.Close)
+	t.Cleanup(appPool.Close)
+
+	authPool, err := pgxpool.New(context.Background(), cfg.DatabaseUrl)
+	if err != nil {
+		t.Fatalf("failed to connect to test DB: %v", err)
+	}
+
+	t.Cleanup(authPool.Close)
 
 	logger := logger.New(cfg.LogLevel, cfg.LogFormat, os.Stdout)
 	jwtSvc := auth.NewJWTservice(cfg.JWTSecret, cfg.JWTAccessTokenTTLWeb, cfg.JWTAccessTokneTTLMobile)
 
-	return buildRouter(cfg, logger, pool), jwtSvc
+	return buildRouter(cfg, logger, appPool, authPool), jwtSvc
 }
 
 func TestHealth(t *testing.T) {

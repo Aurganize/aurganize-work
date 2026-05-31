@@ -49,7 +49,7 @@ func (s *AuthService) SignUp(ctx context.Context, in SignupInput) (*TokenPair, e
 		return nil, domain.ErrInvalidInput(err.Error(), err)
 	}
 
-	conn, err := s.pool.Acquire(ctx)
+	conn, err := s.appPool.Acquire(ctx)
 	if err != nil {
 		return nil, domain.ErrInternal(err)
 	}

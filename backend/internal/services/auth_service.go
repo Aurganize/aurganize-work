@@ -14,7 +14,8 @@ import (
 // One instance per process; safe for concurrent use.
 type AuthService struct {
 	jwt              *auth.JWTService
-	pool             DBPool
+	appPool          DBPool
+	authPool         DBPool
 	refreshTTLWeb    time.Duration
 	refreshTTLMobile time.Duration
 }
@@ -37,12 +38,14 @@ type PoolConn interface {
 // into the auth handler.
 func NewAuthService(
 	jwt *auth.JWTService,
-	pool DBPool,
+	appPool DBPool,
+	authPool DBPool,
 	refreshTTLWeb, refreshTTLMobile time.Duration,
 ) *AuthService {
 	return &AuthService{
 		jwt:              jwt,
-		pool:             pool,
+		appPool:          appPool,
+		authPool:         authPool,
 		refreshTTLWeb:    refreshTTLWeb,
 		refreshTTLMobile: refreshTTLMobile,
 	}

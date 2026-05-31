@@ -18,6 +18,7 @@ func Logger(logger *slog.Logger) gin.HandlerFunc {
 		path := ctx.Request.URL.Path
 		raw := ctx.Request.URL.RawQuery
 
+		// SetLogger(ctx, logger)
 		// Run the rest of the chain.
 		ctx.Next()
 

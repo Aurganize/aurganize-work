@@ -44,6 +44,14 @@ tools: ## Install Go-based CLI tools (sqlc, goose, golangci-lint, govulncheck)
 	go install golang.org/x/vuln/cmd/govulncheck@latest
 
 # === Database ===
+
+# === Database roles ===
+.PHONY: setup-roles
+setup-roles: ## Create/refresh aurganize_app and aurganize_auth roles
+	bash scripts/setup_db_roles.sh
+
+
+# === Database (migrations) ===
 .PHONY: migrate-up
 migrate-up: ## Apply all pending migrations to dev DB
 	goose -dir migrations postgres "$(DATABASE_URL)" up
@@ -123,3 +131,11 @@ psql: ## Open psql to dev DB
 .PHONY: psql-test
 psql-test: ## Open psql to test DB
 	psql "postgres://aurganize:aurganize@localhost:5433/aurganize_test?sslmode=disable"
+
+.PHONY: psql-app
+psql-app: ## Open psql as the application role (RLS-respecting)
+	psql "$(DATABASE_URL)"
+
+.PHONY: psql-auth
+psql-auth: ## Open psql as the auth role (read-only, BYPASSRLS)
+	psql "$(DATABASE_AUTH_URL)"

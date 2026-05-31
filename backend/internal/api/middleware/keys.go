@@ -17,4 +17,5 @@ var (
 	keyAuthCtx   = contextKey{name: "auth_ctx"}
 	keyDBConn    = contextKey{name: "db_conn"}
 	keyDBtx      = contextKey{name: "db_tx"}
+	keyLogger    = contextKey{name: "logger"}
 )

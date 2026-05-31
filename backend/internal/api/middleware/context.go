@@ -129,3 +129,17 @@ func GetDBtx(c context.Context) pgx.Tx {
 	}
 	return nil
 }
+
+// func SetLogger(c *gin.Context, logger *slog.Logger) {
+// 	c.Set(keyLogger.String(), logger)
+// 	c.Request = c.Request.WithContext(
+// 		context.WithValue(c.Request.Context(), keyLogger.String(), logger),
+// 	)
+// }
+
+// func GetLogger(c context.Context) *slog.Logger {
+// 	if v, ok := c.Value(keyLogger).(*slog.Logger); ok {
+// 		return v
+// 	}
+// 	return nil
+// }

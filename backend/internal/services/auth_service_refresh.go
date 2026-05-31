@@ -30,9 +30,16 @@ func (s *AuthService) Refresh(ctx context.Context, in RefreshInput) (*TokenPair,
 		return nil, domain.ErrInvalidInput("invalid client type", nil)
 	}
 
-	hash := auth.HashRefreshToken(in.RefreshToken)
+	hashedRefresh := auth.HashRefreshToken(in.RefreshToken)
 
-	conn, err := s.pool.Acquire(ctx)
+	// === Stage 1: find session on authPool ===
+	session, err := s.findSessionByHash(ctx, hashedRefresh)
+	if err != nil {
+		return nil, err
+	}
+
+	// === Stage 2: rotate on appPool ===
+	conn, err := s.appPool.Acquire(ctx)
 	if err != nil {
 		return nil, domain.ErrInternal(err)
 	}
@@ -46,17 +53,6 @@ func (s *AuthService) Refresh(ctx context.Context, in RefreshInput) (*TokenPair,
 
 	defer tx.Rollback(ctx)
 
-	// We don't know the tenant yet — look up session without tenancy.
-	querier := gen.New(tx)
-
-	session, err := querier.GetSessionByTokenHash(ctx, hash)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, domain.ErrUnauthenticated("invalid or expired refresh token", nil)
-		}
-		return nil, domain.ErrInternal(err)
-	}
-
 	// Set tenancy now that we know it.
 	if _, err := tx.Exec(ctx,
 		"SELECT set_config('app.tenant_id', $1, true)",
@@ -64,6 +60,9 @@ func (s *AuthService) Refresh(ctx context.Context, in RefreshInput) (*TokenPair,
 		return nil, domain.ErrInternal(err)
 	}
 
+	querier := gen.New(tx)
+
+	// Need the user's role for the new access JWT; fetch inside the tx.
 	user, err := querier.GetUserByID(ctx, session.UserID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

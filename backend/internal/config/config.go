@@ -22,7 +22,8 @@ type Config struct {
 
 	// ====== Database =======
 
-	DatabaseUrl string `envconfig:"DATABASE_URL" required:"true"`
+	DatabaseUrl     string `envconfig:"DATABASE_URL" required:"true"`
+	DatabaseAuthUrl string `envconfig:"DATABASE_AUTH_URL" required:"true"`
 
 	// ====== JWT / Auth ======
 
