@@ -54,15 +54,15 @@ setup-roles: ## Create/refresh aurganize_app and aurganize_auth roles
 # === Database (migrations) ===
 .PHONY: migrate-up
 migrate-up: ## Apply all pending migrations to dev DB
-	goose -dir migrations postgres "$(DATABASE_URL)" up
+	goose -dir migrations postgres "$(DATABASE_OWNER_URL)" up
 
 .PHONY: migrate-down
 migrate-down: ## Roll back the last migration on dev DB
-	goose -dir migrations postgres "$(DATABASE_URL)" down
+	goose -dir migrations postgres "$(DATABASE_OWNER_URL)" down
 
 .PHONY: migrate-status
 migrate-status: ## Show migration status on dev DB
-	goose -dir migrations postgres "$(DATABASE_URL)" status
+	goose -dir migrations postgres "$(DATABASE_OWNER_URL)" status
 
 .PHONY: migrate-create
 migrate-create: ## Create a new migration. Usage: make migrate-create name=add_clients_table

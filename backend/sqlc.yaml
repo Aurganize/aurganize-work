@@ -23,7 +23,7 @@ sql :
           - db_type : "uuid"
             nullable : true
             go_type :
-              type : "*UUID"
+              type : "UUID"
               import : "github.com/google/uuid"
               pointer : true
           - db_type : "timestamptz"
