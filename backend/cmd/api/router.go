@@ -28,6 +28,11 @@ func buildRouter(cfg *config.Config, logger *slog.Logger, appPool *pgxpool.Pool,
 	authSvc := services.NewAuthService(jwtSvc, &appPoolAdapter, &authPoolAdapter, cfg.JWTAccessTokenTTLWeb, cfg.JWTAccessTokneTTLMobile)
 	authHandler := handlers.NewAuthHandler(authSvc)
 
+	clientSvc := services.NewClientService()
+	clientHandler := handlers.NewClientHandler(clientSvc)
+	siteSvc := services.NewSitesService()
+	siteHandler := handlers.NewSiteHanlder(siteSvc)
+
 	// gin.New() instead of gin.Default() — Default() adds gin's stdout
 	// logger and recovery middleware in a format that doesn't match slog.
 	// We add our own (file 05).
@@ -80,6 +85,24 @@ func buildRouter(cfg *config.Config, logger *slog.Logger, appPool *pgxpool.Pool,
 		// A minimal "who am I?" endpoint to verify the middleware chain works.
 		// Replaced/extended in 06.
 		protected.GET("/me", authHandler.Me)
+
+		clients := protected.Group("/clients")
+		{
+			clients.POST("", middleware.RequireRole("admin", "pm"), clientHandler.Create)
+			clients.GET("", clientHandler.List)
+			clients.GET("/:id", clientHandler.Get)
+			clients.PATCH("/:id", middleware.RequireRole("admin", "pm"), clientHandler.Update)
+			clients.DELETE("/:id", middleware.RequireRole("admin"), clientHandler.Delete)
+		}
+
+		sites := protected.Group("/sites")
+		{
+			sites.POST("", middleware.RequireRole("admin", "pm"), siteHandler.Create)
+			sites.GET("", siteHandler.List)
+			sites.GET("/:id", siteHandler.Get)
+			sites.PATCH("/:id", middleware.RequireRole("admin", "pm"), siteHandler.Update)
+			sites.DELETE("/:id", middleware.RequireRole("admin", "pm"), siteHandler.Delete)
+		}
 	}
 
 	return r

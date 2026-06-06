@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"strconv"
 	"strings"
 
 	"git.aurganize.com/Aurganize/aurganize-work-backend/internal/api/response"
@@ -44,7 +45,7 @@ type UpdateSiteInput struct {
 type ListSitesInput struct {
 	Limit    int32
 	Cursor   *response.Cursor
-	ClientID uuid.UUID
+	ClientID *uuid.UUID
 }
 
 type SitePage struct {
@@ -81,10 +82,11 @@ func (s *SitesService) Create(
 	}
 	var lattitude pgtype.Numeric
 	var longitude pgtype.Numeric
-	if err := lattitude.Scan(in.Latitude); err != nil {
+
+	if err := lattitude.Scan(strconv.FormatFloat(*in.Latitude, 'f', 6, 64)); err != nil {
 		return nil, domain.ErrInvalidInput("provided latitude is invalid", err)
 	}
-	if err := longitude.Scan(in.Longitude); err != nil {
+	if err := longitude.Scan(strconv.FormatFloat(*in.Longitude, 'f', 6, 64)); err != nil {
 		return nil, domain.ErrInvalidInput("provided longitude is invalid", err)
 	}
 
@@ -158,10 +160,10 @@ func (s *SitesService) List(
 	var items []gen.Sites
 	var err error
 
-	if in.ClientID != uuid.Nil {
+	if in.ClientID != nil {
 		items, err = q.ListSitesByClient(ctx, gen.ListSitesByClientParams{
 			Limit:          in.Limit,
-			ClientID:       in.ClientID,
+			ClientID:       *in.ClientID,
 			AfterCreatedAt: afterCreatedAt,
 			AfterID:        afterId,
 		})
@@ -213,11 +215,22 @@ func (s *SitesService) Update(
 
 	var lattitude pgtype.Numeric
 	var longitude pgtype.Numeric
-	if err := lattitude.Scan(in.Latitude); err != nil {
-		return nil, domain.ErrInvalidInput("provided latitude is invalid", err)
+	if in.Latitude != nil {
+		if err := lattitude.Scan(strconv.FormatFloat(*in.Latitude, 'f', 6, 64)); err != nil {
+			return nil, domain.ErrInvalidInput("provided latitude is invalid", err)
+		}
 	}
-	if err := longitude.Scan(in.Longitude); err != nil {
-		return nil, domain.ErrInvalidInput("provided longitude is invalid", err)
+	if in.Longitude != nil {
+		if err := longitude.Scan(strconv.FormatFloat(*in.Longitude, 'f', 6, 64)); err != nil {
+			return nil, domain.ErrInvalidInput("provided longitude is invalid", err)
+		}
+	}
+
+	if (in.Latitude == nil) != (in.Longitude == nil) {
+		return nil, domain.ErrInvalidInput(
+			"latitude and longitude must both be provided or both omitted",
+			nil,
+		)
 	}
 
 	params.Latitude = lattitude

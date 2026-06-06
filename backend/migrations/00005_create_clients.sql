@@ -42,6 +42,7 @@ ALTER TABLE clients ADD CONSTRAINT clients_gstin_format
     CHECK (gstin IS NULL OR gstin ~ '^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$');
 
 -- RLS — the standard policy, identical to every other tenant-scoped table.
+ALTER TABLE clients ENABLE ROW LEVEL SECURITY;
 ALTER TABLE clients FORCE ROW LEVEL SECURITY;
 
 CREATE POLICY tenant_isolation ON clients

@@ -57,6 +57,7 @@ ALTER TABLE sites ADD CONSTRAINT sites_lng_range
 ALTER TABLE sites ADD CONSTRAINT sites_lat_lng_together
     CHECK ((latitude IS NULL) = (longitude IS NULL));
 
+ALTER TABLE sites ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sites FORCE ROW LEVEL SECURITY;
 
 CREATE POLICY tenant_isolation ON sites

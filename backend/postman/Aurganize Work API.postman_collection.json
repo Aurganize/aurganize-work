@@ -495,7 +495,70 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{tenant_a_email}}\",\n  \"password\": \"{{tenant_a_password}}\",\n  \"client\": \"web\"\n}"
+              "raw": "{\n  \"email\": \"{{tenant_a_email}}\",\n  \"password\": \"{{tenant_a_password}}\",\n  \"client\": \"web\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{api_v1}}/auth/login",
+              "host": [
+                "{{api_v1}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "03— Login — tenant B admin (web)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"200 Ok\", () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json();",
+                  "",
+                  "pm.environment.set(\"tenant_a_access_token\", data.access_token);",
+                  "pm.environment.set(\"tenant_a_refresh_token\", data.refresh_token);",
+                  "pm.environment.set(\"access_token\", data.access_token);",
+                  "pm.environment.set(\"refresh_token\", data.refresh_token);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disabledSystemHeaders": {}
+          },
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer this-is-not-a-jwt",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{tenant_a_email}}\",\n  \"password\": \"{{tenant_a_password}}\",\n  \"client\": \"web\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{api_v1}}/auth/login",
@@ -756,7 +819,11 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test(\"401 Unauthorized — replay rejected\", () => pm.response.to.have.status(401));"
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json();",
+                  "pm.test(\"email matches tenant B\", () => pm.expect(data.email).to.eql(pm.environment.get(\"tenant_b_email\")));",
+                  "pm.environment.set(\"tenant_b_user_id\", data.user_id);",
+                  "pm.environment.set(\"tenant_b_tenant_id\", data.tenant_id);"
                 ],
                 "type": "text/javascript",
                 "packages": {},
@@ -783,6 +850,849 @@
               ],
               "path": [
                 "me"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "06 - Cross Tenant",
+      "item": [
+        {
+          "name": "06 — Cross-tenant probe",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const tenantA = pm.environment.get(\"tenant_a_tenant_id\");",
+                  "const tenantB = pm.environment.get(\"tenant_b_tenant_id\");",
+                  "pm.test(\"tenant IDs are distinct\", () => pm.expect(tenantA).to.not.eql(tenantB));",
+                  "pm.test(\"user IDs are distinct\", () => {",
+                  "  pm.expect(pm.environment.get(\"tenant_a_user_id\")).to.not.eql(pm.environment.get(\"tenant_b_user_id\"));",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_v1}}/me",
+              "host": [
+                "{{api_v1}}"
+              ],
+              "path": [
+                "me"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "07 - Clients",
+      "item": [
+        {
+          "name": "07 — clients — create (tenant A)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"201 Created\", ()=> pm.response.to.have.status(201));",
+                  "const data = pm.response.json();",
+                  "pm.test(\"returns id\", ()=> pm.expect(data.id).to.be.a(\"string\"));",
+                  "pm.test(\"tenant_id_matched\", () => {",
+                  "    pm.expect(data.tenant_id).to.eql(pm.environment.get(tenant_a_tenant_id));",
+                  "})",
+                  "pm.environment.set(\"tenant_a_client_id\", data.id)"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"XYZ Corporation\",\n  \"contact_name\": \"Riya Menon\",\n  \"contact_email\": \"riya@xyz.example\",\n  \"contact_phone\": \"+91 9876543210\",\n  \"billing_address\": {\n    \"line1\": \"12 MG Road\",\n    \"city\": \"Bengaluru\",\n    \"state\": \"Karnataka\",\n    \"pincode\": \"560001\",\n    \"country\": \"IN\"\n  },\n  \"gstin\": \"29ABCDE1234F1Z5\",\n  \"pan\": \"ABCDE1234F\",\n  \"state_code\": \"KA\",\n  \"notes\": \"Pilot tenant's first paying client.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{api_v1}}/clients",
+              "host": [
+                "{{api_v1}}"
+              ],
+              "path": [
+                "clients"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "07 — clients/:id — own tenant",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"name matches\", () =>",
+                  "  pm.expect(pm.response.json().name).to.eql(\"XYZ Corporation\"));"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{api_v1}}/clients/{{tenant_a_client_id}}",
+              "host": [
+                "{{api_v1}}"
+              ],
+              "path": [
+                "clients",
+                "{{tenant_a_client_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "07 — clients — list",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json();",
+                  "pm.test(\"items is array\", () => pm.expect(data.items).to.be.an(\"array\"));",
+                  "pm.test(\"contains the created client\", () => {",
+                  "  const ids = data.items.map(c => c.id);",
+                  "  pm.expect(ids).to.include(pm.environment.get(\"tenant_a_client_id\"));",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{api_v1}}/clients/?limit=10",
+              "host": [
+                "{{api_v1}}"
+              ],
+              "path": [
+                "clients",
+                ""
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "07 — clients — list (tenant B view)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"name matches\", () =>",
+                  "  pm.expect(pm.response.json().name).to.eql(\"XYZ Corporation\"));"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{api_v1}}/clients/{{tenant_a_client_id}}",
+              "host": [
+                "{{api_v1}}"
+              ],
+              "path": [
+                "clients",
+                "{{tenant_a_client_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "07 — clients/:id — wrong tenant (cross-tenant probe — must NOT leak)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"name matches\", () =>",
+                  "  pm.expect(pm.response.json().name).to.eql(\"XYZ Corporation\"));"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{api_v1}}/clients/{{tenant_a_client_id}}",
+              "host": [
+                "{{api_v1}}"
+              ],
+              "path": [
+                "clients",
+                "{{tenant_a_client_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "07 — clients — duplicate name (must fail)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"201 Created\", ()=> pm.response.to.have.status(201));",
+                  "const data = pm.response.json();",
+                  "pm.test(\"returns id\", ()=> pm.expect(data.id).to.be.a(\"string\"));",
+                  "pm.test(\"tenant_id_matched\", () => {",
+                  "    pm.expect(data.tenant_id).to.eql(pm.environment.get(tenant_a_tenant_id));",
+                  "})",
+                  "pm.environment.set(\"tenant_a_client_id\", data.id)"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"XYZ Corporation\",\n  \"contact_name\": \"Riya Menon\",\n  \"contact_email\": \"riya@xyz.example\",\n  \"contact_phone\": \"+91 9876543210\",\n  \"billing_address\": {\n    \"line1\": \"12 MG Road\",\n    \"city\": \"Bengaluru\",\n    \"state\": \"Karnataka\",\n    \"pincode\": \"560001\",\n    \"country\": \"IN\"\n  },\n  \"gstin\": \"29ABCDE1234F1Z5\",\n  \"pan\": \"ABCDE1234F\",\n  \"state_code\": \"KA\",\n  \"notes\": \"Pilot tenant's first paying client.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{api_v1}}/clients",
+              "host": [
+                "{{api_v1}}"
+              ],
+              "path": [
+                "clients"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "07 — clients — invalid GSTIN",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"201 Created\", ()=> pm.response.to.have.status(201));",
+                  "const data = pm.response.json();",
+                  "pm.test(\"returns id\", ()=> pm.expect(data.id).to.be.a(\"string\"));",
+                  "pm.test(\"tenant_id_matched\", () => {",
+                  "    pm.expect(data.tenant_id).to.eql(pm.environment.get(tenant_a_tenant_id));",
+                  "})",
+                  "pm.environment.set(\"tenant_a_client_id\", data.id)"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"XYZ Corporation\",\n  \"contact_name\": \"Riya Menon\",\n  \"contact_email\": \"riya@xyz.example\",\n  \"contact_phone\": \"+91 9876543210\",\n  \"billing_address\": {\n    \"line1\": \"12 MG Road\",\n    \"city\": \"Bengaluru\",\n    \"state\": \"Karnataka\",\n    \"pincode\": \"560001\",\n    \"country\": \"IN\"\n  },\n  \"gstin\": \"29ABCDE1234F1Z5\",\n  \"pan\": \"ABCDE1234F\",\n  \"state_code\": \"KA\",\n  \"notes\": \"Pilot tenant's first paying client.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{api_v1}}/clients",
+              "host": [
+                "{{api_v1}}"
+              ],
+              "path": [
+                "clients"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "07 — clients — clients/:id — update name",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"201 Created\", ()=> pm.response.to.have.status(201));",
+                  "const data = pm.response.json();",
+                  "pm.test(\"returns id\", ()=> pm.expect(data.id).to.be.a(\"string\"));",
+                  "pm.test(\"tenant_id_matched\", () => {",
+                  "    pm.expect(data.tenant_id).to.eql(pm.environment.get(tenant_a_tenant_id));",
+                  "})",
+                  "pm.environment.set(\"tenant_a_client_id\", data.id)"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "\t\n{\"name\": \"XYZ Corporation (renamed)\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{api_v1}}/clients/{{tenant_a_client_id}}",
+              "host": [
+                "{{api_v1}}"
+              ],
+              "path": [
+                "clients",
+                "{{tenant_a_client_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "07 — clients/:id — cross-tenant (must fail)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"201 Created\", ()=> pm.response.to.have.status(201));",
+                  "const data = pm.response.json();",
+                  "pm.test(\"returns id\", ()=> pm.expect(data.id).to.be.a(\"string\"));",
+                  "pm.test(\"tenant_id_matched\", () => {",
+                  "    pm.expect(data.tenant_id).to.eql(pm.environment.get(tenant_a_tenant_id));",
+                  "})",
+                  "pm.environment.set(\"tenant_a_client_id\", data.id)"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "\t\n{\"name\": \"XYZ Corporation (renamed)\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{api_v1}}/clients/{{tenant_a_client_id}}",
+              "host": [
+                "{{api_v1}}"
+              ],
+              "path": [
+                "clients",
+                "{{tenant_a_client_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "07 — clients/:id — has sites (must fail)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"422 Business Rule Violation\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"message references sites\", () => {",
+                  "  pm.expect(pm.response.json().message.toLowerCase()).to.include(\"sites\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{api_v1}}/clients/{{tenant_a_client_id}}",
+              "host": [
+                "{{api_v1}}"
+              ],
+              "path": [
+                "clients",
+                "{{tenant_a_client_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "07 — clients/:id — happy path",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"422 Business Rule Violation\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"message references sites\", () => {",
+                  "  pm.expect(pm.response.json().message.toLowerCase()).to.include(\"sites\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{api_v1}}/clients/{{tenant_a_client_id}}",
+              "host": [
+                "{{api_v1}}"
+              ],
+              "path": [
+                "clients",
+                "{{tenant_a_client_id}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "08 - Sites",
+      "item": [
+        {
+          "name": "08 — sites — create (tenant A)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"201 Created\", () => pm.response.to.have.status(201));",
+                  "const data = pm.response.json();",
+                  "pm.environment.set(\"tenant_a_site_id\", data.id);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"client_id\": \"{{tenant_a_client_id}}\",\n  \"name\": \"XYZ Bangalore HQ\",\n  \"address\": {\n    \"line1\": \"12 MG Road\",\n    \"floor\": \"5th floor\",\n    \"city\": \"Bengaluru\",\n    \"state\": \"Karnataka\",\n    \"pincode\": \"560001\"\n  },\n  \"latitude\": 12.9716,\n  \"longitude\": 77.5946,\n  \"contact_on_site_name\": \"Sanjay K\",\n  \"contact_on_site_phone\": \"+91 9988776655\",\n  \"access_notes\": \"Visitor badge at reception. Gate closes at 7 PM.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{api_v1}}/sites",
+              "host": [
+                "{{api_v1}}"
+              ],
+              "path": [
+                "sites"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "08 — sites — half-coords (must fail)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"400 Bad Request\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"message mentions latitude/longitude\", () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(JSON.stringify(body).toLowerCase()).to.satisfy(s =>",
+                  "    s.includes(\"latitude\") || s.includes(\"longitude\"));",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"client_id\": \"{{tenant_a_client_id}}\",\n  \"name\": \"XYZ Bangalore HQ\",\n  \"address\": {\n    \"line1\": \"12 MG Road\",\n    \"floor\": \"5th floor\",\n    \"city\": \"Bengaluru\",\n    \"state\": \"Karnataka\",\n    \"pincode\": \"560001\"\n  },\n  \"latitude\": 12.9716,\n  \"contact_on_site_name\": \"Sanjay K\",\n  \"contact_on_site_phone\": \"+91 9988776655\",\n  \"access_notes\": \"Visitor badge at reception. Gate closes at 7 PM.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{api_v1}}/sites",
+              "host": [
+                "{{api_v1}}"
+              ],
+              "path": [
+                "sites"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "08 — sites — client of another tenant (must fail)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"400 Bad Request\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"message mentions latitude/longitude\", () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(JSON.stringify(body).toLowerCase()).to.satisfy(s =>",
+                  "    s.includes(\"latitude\") || s.includes(\"longitude\"));",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"client_id\": \"{{tenant_a_client_id}}\",\n  \"name\": \"XYZ Bangalore HQ\",\n  \"address\": {\n    \"line1\": \"12 MG Road\",\n    \"floor\": \"5th floor\",\n    \"city\": \"Bengaluru\",\n    \"state\": \"Karnataka\",\n    \"pincode\": \"560001\"\n  },\n  \"latitude\": 12.9716,\n  \"contact_on_site_name\": \"Sanjay K\",\n  \"contact_on_site_phone\": \"+91 9988776655\",\n  \"access_notes\": \"Visitor badge at reception. Gate closes at 7 PM.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{api_v1}}/sites",
+              "host": [
+                "{{api_v1}}"
+              ],
+              "path": [
+                "sites"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "08 — sites — sites?client_id=",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json();",
+                  "pm.test(\"only sites of this client\", () => {",
+                  "  data.items.forEach(s => {",
+                  "    pm.expect(s.client_id).to.eql(pm.environment.get(\"tenant_a_client_id\"));",
+                  "  });",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{api_v1}}/sites?client_id={{tenant_a_client_id}}",
+              "host": [
+                "{{api_v1}}"
+              ],
+              "path": [
+                "sites"
+              ],
+              "query": [
+                {
+                  "key": "client_id",
+                  "value": "{{tenant_a_client_id}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "08 — sites — list",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json();",
+                  "pm.test(\"only sites of this client\", () => {",
+                  "  data.items.forEach(s => {",
+                  "    pm.expect(s.client_id).to.eql(pm.environment.get(\"tenant_a_client_id\"));",
+                  "  });",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{api_v1}}/sites?client_id={{tenant_a_client_id}}",
+              "host": [
+                "{{api_v1}}"
+              ],
+              "path": [
+                "sites"
+              ],
+              "query": [
+                {
+                  "key": "client_id",
+                  "value": "{{tenant_a_client_id}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "08 — sites — sites/:id — update",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"access_notes\": \"Visitor badge at reception. Gate closes at 7 PM. (updated)\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{api_v1}}/sites/{{tenant_a_site_id}}",
+              "host": [
+                "{{api_v1}}"
+              ],
+              "path": [
+                "sites",
+                "{{tenant_a_site_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "08 — sites — delete happy",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{api_v1}}/sites/{{tenant_a_site_id}}",
+              "host": [
+                "{{api_v1}}"
+              ],
+              "path": [
+                "sites",
+                "{{tenant_a_site_id}}"
               ]
             }
           },
