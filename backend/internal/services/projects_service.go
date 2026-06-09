@@ -54,6 +54,7 @@ type ListProjectsInput struct {
 	OwnerUserID *uuid.UUID
 }
 
+// ProjectWithPage is the paginated project list, with the cursor to the next page
 type ProjectPage struct {
 	Items      []gen.Projects `json:"items"`
 	NextCursor string         `json:"next_cursor,omitempty"`
