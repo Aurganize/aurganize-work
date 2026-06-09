@@ -33,6 +33,10 @@ func buildRouter(cfg *config.Config, logger *slog.Logger, appPool *pgxpool.Pool,
 	siteSvc := services.NewSitesService()
 	siteHandler := handlers.NewSiteHanlder(siteSvc)
 
+	counterSvc := services.NewCounterService()
+	projectSvc := services.NewProjectService(counterSvc)
+	projectHandler := handlers.NewProjectHandler(projectSvc)
+
 	// gin.New() instead of gin.Default() — Default() adds gin's stdout
 	// logger and recovery middleware in a format that doesn't match slog.
 	// We add our own (file 05).
@@ -103,6 +107,17 @@ func buildRouter(cfg *config.Config, logger *slog.Logger, appPool *pgxpool.Pool,
 			sites.PATCH("/:id", middleware.RequireRole("admin", "pm"), siteHandler.Update)
 			sites.DELETE("/:id", middleware.RequireRole("admin", "pm"), siteHandler.Delete)
 		}
+
+		projects := protected.Group("/projects")
+		{
+			projects.POST("", middleware.RequireRole("admin", "pm"), projectHandler.Create)
+			projects.GET("", middleware.RequireRole("admin", "pm"), projectHandler.List)
+			projects.GET("/:id", middleware.RequireRole("admin", "pm"), projectHandler.Get)
+			projects.PATCH("/:id", middleware.RequireRole("admin", "pm"), projectHandler.Update)
+			projects.PUT(":/id", middleware.RequireRole("admin", "pm"), projectHandler.SetSites)
+			projects.DELETE("/:id", middleware.RequireRole("admin"), projectHandler.Delete)
+		}
+
 	}
 
 	return r
